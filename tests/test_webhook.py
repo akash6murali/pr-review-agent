@@ -1,23 +1,20 @@
 import hashlib
 import hmac
 import json
-
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-SECRET = "test-secret"
-
-# Patch env before importing webhook
 import os
+
+# Must set env vars BEFORE importing app — config.py reads them at import time
+SECRET = "test-secret"
+os.environ["GITHUB_WEBHOOK_SECRET"] = SECRET
 os.environ.setdefault("ANTHROPIC_API_KEY", "test")
 os.environ.setdefault("GITHUB_TOKEN", "test")
-os.environ.setdefault("GITHUB_WEBHOOK_SECRET", SECRET)
+
+from fastapi.testclient import TestClient  # noqa: E402
+from app.main import app  # noqa: E402
 
 
 def _sign(body: bytes) -> str:
-    return "sha256=" + hmac.new(SECRET.encode(), body, hashlib.sha256).hexdigest()  # noqa: S324
+    return "sha256=" + hmac.new(SECRET.encode(), body, hashlib.sha256).hexdigest()
 
 
 client = TestClient(app)

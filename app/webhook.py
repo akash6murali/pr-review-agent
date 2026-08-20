@@ -4,10 +4,11 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
+import os
 
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 
-from app.agent.config import GITHUB_WEBHOOK_SECRET, MAX_DIFF_CHARS
+from app.agent.config import MAX_DIFF_CHARS
 from app.agent.graph import graph
 from app.agent.state import AgentState
 from app.diff_parser import parse_diff, format_diff_for_review
@@ -18,7 +19,8 @@ router = APIRouter()
 
 
 def _verify_signature(body: bytes, signature: str) -> None:
-    mac = hmac.new(GITHUB_WEBHOOK_SECRET.encode(), body, hashlib.sha256)
+    secret = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
+    mac = hmac.new(secret.encode(), body, hashlib.sha256)
     expected = "sha256=" + mac.hexdigest()
     if not hmac.compare_digest(expected, signature):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
